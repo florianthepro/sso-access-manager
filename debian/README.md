@@ -11,7 +11,9 @@ wget https://github.com/florianthepro/sso-access-manager/archive/refs/heads/main
 unzip sso-access-manager.zip
 rm sso-access-manager.zip
 cd sso-access-manager-main/debian
-cd debian
+mv -- * ../../
+../../
+dir
 ./setup.sh
 ```
 
