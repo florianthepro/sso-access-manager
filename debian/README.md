@@ -9,6 +9,7 @@ mkdir /ssoac
 cd /ssoac
 wget https://github.com/florianthepro/sso-access-manager/archive/refs/heads/main.zip -O sso-access-manager.zip
 unzip sso-access-manager.zip
+rm sso-access-manager.zip
 cd sso-access-manager-main/debian
 cd debian
 ./setup.sh
