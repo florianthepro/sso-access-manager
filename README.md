@@ -1,110 +1,50 @@
-# Access Manager
+# SSO Access Manager
 
-Plattformneutrales Grundprojekt für Windows, Linux, macOS und andere Systeme mit Python 3.11 oder neuer. Es installiert nichts global und verändert keine vorhandenen Webserver oder Systemdienste.
+## Ein Kommando auf jedem System
 
-## Voraussetzung
+Voraussetzung: Python 3.11 oder neuer ist installiert und als `python` aufrufbar.
 
-- Python 3.11 oder neuer
-- Internetzugriff beim ersten Setup, damit Python-Pakete in die lokale `.venv` geladen werden können
-
-## Schnellstart
-
-### Linux, Debian, Ubuntu, macOS und BSD
-
-```bash
-unzip access-manager-generic.zip
-cd access-manager
-python3 setup.py
-```
-
-Alternativ unter Unix:
-
-```bash
-./setup.sh
-```
-
-### Windows
-
-ZIP entpacken, PowerShell oder Eingabeaufforderung im Ordner öffnen und ausführen:
-
-```powershell
-py -3 setup.py
-```
-
-Alternativ:
-
-```powershell
-.\setup.ps1
-```
-
-oder:
-
-```bat
-setup.bat
-```
-
-## Verhalten des Setups
-
-Das Setup ermittelt seinen eigenen Projektordner. Deshalb kann der Ordner überall liegen und auch später unter einem anderen Pfad entpackt werden. Es erstellt ausschließlich innerhalb dieses Ordners:
-
-- `.venv` für Projektabhängigkeiten
-- `.env` für lokale Konfiguration und ein zufälliges Secret
-- `data/access.sqlite3` als Produktivdatenbank
-- Log- und PID-Dateien beim Start
-
-Es verwendet weder APT, Homebrew, Chocolatey noch globale `pip`-Installationen. Vorhandene nginx-, Apache-, IIS-, Caddy- oder andere Webserver-Konfigurationen werden nicht gelesen oder verändert.
-
-Das Setup fragt Bind-Adresse und Port ab. Standard ist `127.0.0.1:8765`. Nur Ports 1024 bis 65535 sind erlaubt. Vor dem Speichern wird geprüft, ob der Port auf der gewählten Adresse frei ist. Bereits verwendete Ports werden nicht übernommen und vorhandene Prozesse werden niemals beendet.
-
-Für Cloudflare Tunnel sollte die Bind-Adresse `127.0.0.1` bleiben und der Tunnel auf `http://127.0.0.1:8765` zeigen.
-
-## Start und Verwaltung
-
-Nach dem Setup zeigt das Programm den genauen Python-Pfad an. Universell funktioniert:
-
-```bash
-.venv/bin/python run.py start
-```
-
-Unter Windows:
-
-```powershell
-.venv\Scripts\python.exe run.py start
-```
-
-Weitere Aktionen:
+Diesen einen Befehl unter Linux, macOS, Windows PowerShell und Windows Terminal ausführen:
 
 ```text
-run.py status
-run.py logs
-run.py restart
-run.py stop
-run.py foreground
+python -c "import urllib.request;exec(urllib.request.urlopen('https://raw.githubusercontent.com/florianthepro/sso-access-manager/main/bootstrap.py').read())"
 ```
 
-`foreground` ist für Container, Prozessmanager und Fehlersuche gedacht. `start` startet einen Hintergrundprozess im Benutzerkontext und verändert keine Systemdienste.
+Der Befehl lädt `bootstrap.py` nur mit der Python-Standardbibliothek. Danach läuft überall dieselbe OOBE:
 
-## Daten und Git
+1. Installationsordner wählen. Standard ist `/ssoac` unter Unix und `%USERPROFILE%\ssoac` unter Windows.
+2. Wenn der Ordner existiert, Reset ausdrücklich bestätigen oder sicher abbrechen.
+3. Vor einem Reset optional die SQLite-Datenbank sichern.
+4. Repository vollständig herunterladen und installieren.
+5. Lokale `.venv` erzeugen.
+6. Abhängigkeiten ausschließlich in `.venv` installieren.
+7. Bind-IP und freien Port auswählen.
+8. Zufälliges Secret und lokale Konfiguration erzeugen.
+9. Anwendung optional sofort starten.
 
-`data/empty.sqlite3` enthält nur die leere Struktur und kann in Git liegen. Folgende Dateien sind durch `.gitignore` ausgeschlossen:
+Es gibt keinen betriebssystemspezifischen Unterordner und keinen zweiten Installationsweg, der für die normale Nutzung benötigt wird.
 
-- `.env`
-- `.venv/`
-- `data/access.sqlite3`
-- Logs und PID-Dateien
+## Sicherheitsverhalten
 
-Vor Updates sollte `data/access.sqlite3` gesichert werden. Das Setup überschreibt eine vorhandene Produktivdatenbank nicht. Eine vorhandene `.env` wird vor einer erneuten Einrichtung gesichert.
+- Keine globale Paketinstallation.
+- Keine Änderung an nginx, Apache, IIS, Caddy, Firewall oder vorhandenen Diensten.
+- Keine Ports unter 1024.
+- Belegte Ports werden durch einen echten Bind-Test abgelehnt.
+- Eine vorhandene Installation wird nie ohne ausdrückliche Zustimmung gelöscht.
+- Vor einem Reset wird standardmäßig ein Datenbankbackup angeboten.
+- Unter Unix wird `sudo` nur verwendet, wenn der gewählte Zielordner ohne erhöhte Rechte nicht geschrieben werden kann.
+- Die Anwendung selbst läuft als normaler Benutzer.
 
-## Sicherheit
+## Betrieb nach dem Setup
 
-- Nicht als root oder Administrator erforderlich.
-- Standardmäßig nur auf `127.0.0.1` erreichbar.
-- Keine privilegierten Ports unter 1024.
-- Zufälliges Anwendungssecret.
-- Lokale virtuelle Python-Umgebung.
-- SQLite-Datei bleibt außerhalb von Git.
-- Für öffentlichen Zugriff HTTPS über einen Reverse Proxy oder Cloudflare Tunnel verwenden.
+Die OOBE zeigt den passenden Befehl an. Plattformneutral kann im Installationsordner das Python aus `.venv` verwendet werden:
 
-## Einschränkung
+```text
+python run.py start
+python run.py status
+python run.py logs
+python run.py restart
+python run.py stop
+```
 
-Ein Hintergrundstart über `run.py start` ist kein systemweiter Boot-Autostart. Für Boot-Autostart sollte der jeweilige Betreiber später bewusst seinen vorhandenen Prozessmanager verwenden, zum Beispiel systemd, launchd, Windows Task Scheduler, Docker oder einen Hosting-Dienst. Das Projekt trägt sich absichtlich nicht automatisch in das Betriebssystem ein.
+Wenn `python` nicht automatisch auf `.venv` zeigt, unter Unix `.venv/bin/python` und unter Windows `.venv\Scripts\python.exe` verwenden.
