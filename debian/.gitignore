@@ -1,6 +1,0 @@
-.env
-.runtime/
-.venv/
-data/access.sqlite3*
-data/*.log
-data/*.pid
