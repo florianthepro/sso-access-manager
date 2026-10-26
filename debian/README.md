@@ -4,11 +4,12 @@
 Das Projekt bringt `setup.sh`, `manage.sh` und `uninstall.sh` mit. `setup.sh` muss als normaler Benutzer ausgeführt werden. Es lädt eine private, portable Python-Laufzeit in `.runtime/`, erstellt `.venv/` im Projektordner und verändert weder APT noch vorhandene Python-, nginx-, Apache- oder andere Webserver-Installationen.
 
 ```bash
+[ -d /ssoac ] && [ "$(find /ssoac -mindepth 1 -print -quit)" ] && rm -rf /ssoac
 mkdir /ssoac
 cd /ssoac
 wget https://github.com/florianthepro/sso-access-manager/archive/refs/heads/main.zip -O sso-access-manager.zip
 unzip sso-access-manager.zip
-cd sso-access-manager
+cd sso-access-manager-main/debian
 cd debian
 ./setup.sh
 ```
