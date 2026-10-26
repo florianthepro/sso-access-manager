@@ -5,6 +5,8 @@ Das Projekt bringt `setup.sh`, `manage.sh` und `uninstall.sh` mit. `setup.sh` mu
 
 ```bash
 [ -d /ssoac ] && [ "$(find /ssoac -mindepth 1 -print -quit)" ] && rm -rf /ssoac && mkdir /ssoac && cd /ssoac && wget https://github.com/florianthepro/sso-access-manager/archive/refs/heads/main.zip -O sso-access-manager.zip && unzip sso-access-manager.zip && rm sso-access-manager.zip && cd sso-access-manager-main/debian && mv -- * ../../ && cd ../../ && rm -r sso-access-manager-main
+```
+```bash
 ./setup.sh
 ```
 
