@@ -1,86 +1,110 @@
-# SSO Access Manager
+# Access Manager
 
-Ein All-in-one-Repository. Es gibt keinen gesonderten `debian/`-Ordner. `backend.py`, `setup.py`, `run.py`, Datenbankschema und Installationsskripte liegen gemeinsam im Repository-Hauptverzeichnis.
+Plattformneutrales Grundprojekt für Windows, Linux, macOS und andere Systeme mit Python 3.11 oder neuer. Es installiert nichts global und verändert keine vorhandenen Webserver oder Systemdienste.
 
-## Ein Befehl unter Linux
+## Voraussetzung
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/florianthepro/sso-access-manager/main/install.sh | sh
-```
+- Python 3.11 oder neuer
+- Internetzugriff beim ersten Setup, damit Python-Pakete in die lokale `.venv` geladen werden können
 
-Alternativ mit wget:
+## Schnellstart
 
-```bash
-wget -qO- https://raw.githubusercontent.com/florianthepro/sso-access-manager/main/install.sh | sh
-```
-
-Standardziel ist `/ssoac`. Ist `/ssoac` nicht beschreibbar, verwendet das Installationsskript `sudo` ausschließlich zum Erstellen beziehungsweise Ersetzen dieses Ordners und übergibt ihn danach dem aufrufenden Benutzer. Die Anwendung selbst wird nicht als root betrieben.
-
-Wenn `/ssoac` bereits existiert, fragt das Skript vor jedem Reset ausdrücklich nach. Standardantwort ist Abbruch. Vor einem bestätigten Reset wird zusätzlich angeboten, `data/access.sqlite3` als datierte Backupdatei neben `/ssoac` zu sichern.
-
-Für einen anderen Zielordner:
+### Linux, Debian, Ubuntu, macOS und BSD
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/florianthepro/sso-access-manager/main/install.sh | SSOAC_DIR="$HOME/ssoac" sh
-```
-
-## Manuelle Installation
-
-Voraussetzungen: Python 3.11+, Internetzugang beim ersten Setup und `unzip`.
-
-```bash
-git clone https://github.com/florianthepro/sso-access-manager.git /ssoac
-cd /ssoac
+unzip access-manager-generic.zip
+cd access-manager
 python3 setup.py
 ```
 
-`setup.py` erstellt `.venv`, installiert Python-Abhängigkeiten nur dort, prüft Bind-IP und Port, erzeugt `.env` mit zufälligem Secret und legt `data/access.sqlite3` nur an, wenn sie noch nicht vorhanden ist. Es werden keine Systempakete, Webserverkonfigurationen oder Firewallregeln verändert.
-
-## Start und Betrieb
-
-Linux/macOS:
+Alternativ unter Unix:
 
 ```bash
-cd /ssoac
-.venv/bin/python run.py start
-.venv/bin/python run.py status
-.venv/bin/python run.py logs
-.venv/bin/python run.py restart
-.venv/bin/python run.py stop
+./setup.sh
 ```
 
-Windows:
+### Windows
+
+ZIP entpacken, PowerShell oder Eingabeaufforderung im Ordner öffnen und ausführen:
 
 ```powershell
 py -3 setup.py
+```
+
+Alternativ:
+
+```powershell
+.\setup.ps1
+```
+
+oder:
+
+```bat
+setup.bat
+```
+
+## Verhalten des Setups
+
+Das Setup ermittelt seinen eigenen Projektordner. Deshalb kann der Ordner überall liegen und auch später unter einem anderen Pfad entpackt werden. Es erstellt ausschließlich innerhalb dieses Ordners:
+
+- `.venv` für Projektabhängigkeiten
+- `.env` für lokale Konfiguration und ein zufälliges Secret
+- `data/access.sqlite3` als Produktivdatenbank
+- Log- und PID-Dateien beim Start
+
+Es verwendet weder APT, Homebrew, Chocolatey noch globale `pip`-Installationen. Vorhandene nginx-, Apache-, IIS-, Caddy- oder andere Webserver-Konfigurationen werden nicht gelesen oder verändert.
+
+Das Setup fragt Bind-Adresse und Port ab. Standard ist `127.0.0.1:8765`. Nur Ports 1024 bis 65535 sind erlaubt. Vor dem Speichern wird geprüft, ob der Port auf der gewählten Adresse frei ist. Bereits verwendete Ports werden nicht übernommen und vorhandene Prozesse werden niemals beendet.
+
+Für Cloudflare Tunnel sollte die Bind-Adresse `127.0.0.1` bleiben und der Tunnel auf `http://127.0.0.1:8765` zeigen.
+
+## Start und Verwaltung
+
+Nach dem Setup zeigt das Programm den genauen Python-Pfad an. Universell funktioniert:
+
+```bash
+.venv/bin/python run.py start
+```
+
+Unter Windows:
+
+```powershell
 .venv\Scripts\python.exe run.py start
 ```
 
-## Port- und Dienstschutz
-
-- Standardbindung: `127.0.0.1:8765`
-- nur Ports `1024` bis `65535`
-- echter Bind-Test vor Einrichtung und Start
-- belegte Ports werden abgelehnt
-- keine fremden Prozesse werden beendet
-- keine nginx-, Apache-, Caddy- oder IIS-Dateien werden verändert
-- keine globale Python-Paketinstallation
-- kein automatischer Systemdienst
-
-Für Cloudflare Tunnel das Standardziel `http://127.0.0.1:8765` verwenden.
-
-## Repository-Struktur
+Weitere Aktionen:
 
 ```text
-backend.py
-setup.py
-setup.sh
-setup.ps1
-setup.bat
-run.py
-install.sh
-requirements-runtime.txt
-data/empty.sqlite3
+run.py status
+run.py logs
+run.py restart
+run.py stop
+run.py foreground
 ```
 
-Die Dateien `.env`, `.venv/`, `data/access.sqlite3`, Logs und PID-Dateien werden nicht in Git gespeichert.
+`foreground` ist für Container, Prozessmanager und Fehlersuche gedacht. `start` startet einen Hintergrundprozess im Benutzerkontext und verändert keine Systemdienste.
+
+## Daten und Git
+
+`data/empty.sqlite3` enthält nur die leere Struktur und kann in Git liegen. Folgende Dateien sind durch `.gitignore` ausgeschlossen:
+
+- `.env`
+- `.venv/`
+- `data/access.sqlite3`
+- Logs und PID-Dateien
+
+Vor Updates sollte `data/access.sqlite3` gesichert werden. Das Setup überschreibt eine vorhandene Produktivdatenbank nicht. Eine vorhandene `.env` wird vor einer erneuten Einrichtung gesichert.
+
+## Sicherheit
+
+- Nicht als root oder Administrator erforderlich.
+- Standardmäßig nur auf `127.0.0.1` erreichbar.
+- Keine privilegierten Ports unter 1024.
+- Zufälliges Anwendungssecret.
+- Lokale virtuelle Python-Umgebung.
+- SQLite-Datei bleibt außerhalb von Git.
+- Für öffentlichen Zugriff HTTPS über einen Reverse Proxy oder Cloudflare Tunnel verwenden.
+
+## Einschränkung
+
+Ein Hintergrundstart über `run.py start` ist kein systemweiter Boot-Autostart. Für Boot-Autostart sollte der jeweilige Betreiber später bewusst seinen vorhandenen Prozessmanager verwenden, zum Beispiel systemd, launchd, Windows Task Scheduler, Docker oder einen Hosting-Dienst. Das Projekt trägt sich absichtlich nicht automatisch in das Betriebssystem ein.
