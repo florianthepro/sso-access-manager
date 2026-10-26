@@ -1,110 +1,27 @@
-import getpass
-import ipaddress
-import os
-import secrets
-import shutil
-import socket
-import subprocess
-import sys
+import os,secrets,shutil,socket,subprocess,sys
 from pathlib import Path
-
-BASE = Path(__file__).resolve().parent
-VENV = BASE / ".venv"
-DATA = BASE / "data"
-ENV = BASE / ".env"
-REQ = BASE / "requirements-runtime.txt"
-
-
-def fail(message):
-    raise SystemExit(f"Fehler: {message}")
-
-
-def ask(prompt, default):
-    value = input(f"{prompt} [{default}]: ").strip()
-    return value or default
-
-
-def venv_python():
-    return VENV / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
-
-
-def validate_host(host):
-    if host in {"localhost", "0.0.0.0", "::", "::1"}:
-        return
-    try:
-        ipaddress.ip_address(host)
-    except ValueError:
-        if not all(part and part.replace("-", "").isalnum() for part in host.split(".")):
-            fail("ungueltige Bind-Adresse")
-
-
-def check_port(host, port):
-    bind_host = "127.0.0.1" if host == "localhost" else host
-    family = socket.AF_INET6 if ":" in bind_host else socket.AF_INET
-    sock = socket.socket(family, socket.SOCK_STREAM)
-    try:
-        sock.bind((bind_host, port))
-    except OSError as exc:
-        fail(f"{host}:{port} ist nicht verfuegbar: {exc}")
-    finally:
-        sock.close()
-
-
-def write_env(host, port):
-    if ENV.exists():
-        backup = ENV.with_name(f".env.backup.{secrets.token_hex(4)}")
-        shutil.copy2(ENV, backup)
-        print(f"Vorhandene Konfiguration gesichert: {backup.name}")
-    db = (DATA / "access.sqlite3").resolve()
-    values = {
-        "APP_SECRET": secrets.token_urlsafe(48),
-        "TRUSTED_HOSTS": f"{host},localhost,127.0.0.1",
-        "DATABASE_PATH": str(db),
-        "COOKIE_SECURE": "false",
-        "SESSION_HOURS": "12",
-        "BIND_HOST": host,
-        "BIND_PORT": str(port),
-    }
-    ENV.write_text("".join(f"{k}={v}\n" for k, v in values.items()), encoding="utf-8")
-    if os.name != "nt":
-        os.chmod(ENV, 0o600)
-
-
+B=Path(__file__).resolve().parent;V=B/'.venv';D=B/'data';E=B/'.env'
+def ask(p,d):
+ v=input(f'{p} [{d}]: ').strip();return v or d
 def main():
-    if sys.version_info < (3, 11):
-        fail("Python 3.11 oder neuer ist erforderlich")
-    print("Access Manager Setup")
-    print(f"Projektordner: {BASE}")
-    print(f"Python: {sys.executable}")
-    print(f"Benutzer: {getpass.getuser()}")
-    DATA.mkdir(exist_ok=True)
-    if not VENV.exists():
-        print("Erstelle private Python-Umgebung im Projektordner ...")
-        subprocess.run([sys.executable, "-m", "venv", str(VENV)], check=True)
-    py = venv_python()
-    print("Installiere Projektabhaengigkeiten nur in .venv ...")
-    subprocess.run([str(py), "-m", "pip", "install", "--disable-pip-version-check", "--no-input", "-r", str(REQ)], check=True)
-    host = ask("Bind-Adresse", "127.0.0.1")
-    validate_host(host)
-    try:
-        port = int(ask("Port", "8765"))
-    except ValueError:
-        fail("Port muss numerisch sein")
-    if not 1024 <= port <= 65535:
-        fail("nur nicht privilegierte Ports 1024 bis 65535 sind erlaubt")
-    check_port(host, port)
-    write_env(host, port)
-    target = DATA / "access.sqlite3"
-    if not target.exists():
-        shutil.copy2(DATA / "empty.sqlite3", target)
-        if os.name != "nt":
-            os.chmod(target, 0o600)
-    print("\nEinrichtung abgeschlossen.")
-    print(f"Start: {py} run.py start")
-    print(f"Adresse: http://{host}:{port}")
-    if input("Jetzt starten? [J/n]: ").strip().lower() not in {"n", "nein", "no"}:
-        os.execv(str(py), [str(py), str(BASE / "run.py"), "start"])
-
-
-if __name__ == "__main__":
-    main()
+ if sys.version_info<(3,11):raise SystemExit('Python 3.11+ erforderlich')
+ if not V.exists():subprocess.run([sys.executable,'-m','venv',str(V)],check=True)
+ py=V/('Scripts/python.exe' if os.name=='nt' else 'bin/python')
+ subprocess.run([str(py),'-m','pip','install','--disable-pip-version-check','-q','-r',str(B/'requirements.txt')],check=True)
+ host=ask('IP','127.0.0.1');port=int(ask('Port','8765'))
+ if not 1024<=port<=65535:raise SystemExit('Port 1024-65535 erforderlich')
+ s=socket.socket(socket.AF_INET6 if ':' in host else socket.AF_INET);s.bind((host,port));s.close()
+ origin=ask('Oeffentliche HTTPS-Origin fuer Passkeys (leer = lokal ohne Passkey)','')
+ rp_id=''
+ if origin:
+  from urllib.parse import urlparse
+  u=urlparse(origin); 
+  if u.scheme!='https' or not u.hostname:raise SystemExit('Origin muss https://domain sein')
+  rp_id=u.hostname
+ vals={'APP_SECRET':secrets.token_urlsafe(48),'DATABASE_PATH':str((D/'app.sqlite3').resolve()),'BIND_HOST':host,'BIND_PORT':str(port),'APP_ORIGIN':origin,'RP_ID':rp_id,'COOKIE_SECURE':'true' if origin else 'false'}
+ E.write_text(''.join(f'{k}={v}\n' for k,v in vals.items()))
+ if os.name!='nt':os.chmod(E,0o600)
+ if not (D/'app.sqlite3').exists():shutil.copy2(D/'empty.sqlite3',D/'app.sqlite3')
+ print(f'Fertig: http://{host}:{port}')
+ if input('Starten? [J/n]: ').strip().lower()!='n':os.execv(str(py),[str(py),str(B/'run.py'),'start'])
+if __name__=='__main__':main()

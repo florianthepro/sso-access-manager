@@ -1,8 +1,0 @@
-Empfohlen, interaktiv mit curl:
-sh -c "$(curl -fsSL https://raw.githubusercontent.com/florianthepro/sso-access-manager/main/install.sh)"
-
-Alternativ mit wget:
-sh -c "$(wget -qO- https://raw.githubusercontent.com/florianthepro/sso-access-manager/main/install.sh)"
-
-Anderer Zielordner:
-SSOAC_DIR="$HOME/ssoac" sh -c "$(curl -fsSL https://raw.githubusercontent.com/florianthepro/sso-access-manager/main/install.sh)"

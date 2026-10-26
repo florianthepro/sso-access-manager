@@ -1,6 +1,6 @@
 .env
-.runtime/
 .venv/
-data/access.sqlite3*
-data/*.log
+__pycache__/
+data/app.sqlite3*
 data/*.pid
+data/*.log
