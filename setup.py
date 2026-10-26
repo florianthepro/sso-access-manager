@@ -8,9 +8,16 @@ def main():
  if not V.exists():subprocess.run([sys.executable,'-m','venv',str(V)],check=True)
  py=V/('Scripts/python.exe' if os.name=='nt' else 'bin/python')
  subprocess.run([str(py),'-m','pip','install','--disable-pip-version-check','-q','-r',str(B/'requirements.txt')],check=True)
- host=ask('IP','127.0.0.1');port=int(ask('Port','8765'))
- if not 1024<=port<=65535:raise SystemExit('Port 1024-65535 erforderlich')
- s=socket.socket(socket.AF_INET6 if ':' in host else socket.AF_INET);s.bind((host,port));s.close()
+ host=ask('IP','127.0.0.1')
+ while True:
+  port=int(ask('Port','8765'))
+  if not 1024<=port<=65535:print('Port 1024-65535 erforderlich');continue
+  s=socket.socket(socket.AF_INET6 if ':' in host else socket.AF_INET)
+  try:s.bind((host,port));s.close();break
+  except OSError:
+   s.close()
+   probe=socket.socket(socket.AF_INET6 if ':' in host else socket.AF_INET);probe.bind((host,0));suggested=probe.getsockname()[1];probe.close()
+   print(f'Port {port} belegt. Vorschlag: {suggested}')
  origin=ask('Oeffentliche HTTPS-Origin fuer Passkeys (leer = lokal ohne Passkey)','')
  rp_id=''
  if origin:
